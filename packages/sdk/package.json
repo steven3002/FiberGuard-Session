@@ -1,14 +1,11 @@
 {
-  "name": "@fiberguard/gateway",
+  "name": "@fiberguard/session",
   "version": "0.1.0",
   "private": true,
-  "description": "FiberGuard Session gateway: scoped, revocable, spend-limited payment sessions in front of a Fiber node",
+  "description": "Typed, isomorphic client for the FiberGuard Session gateway: scoped, revocable, spend-limited Fiber payment sessions",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "fiberguard": "./dist/cli.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -24,15 +21,12 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@fastify/cors": "^11.2.0",
-    "@fiberguard/policy": "workspace:*",
-    "@fiberguard/shared": "workspace:*",
-    "commander": "^15.0.0",
-    "fastify": "^5.10.0",
-    "zod": "^4.4.3"
+    "@fiberguard/shared": "workspace:*"
   },
   "devDependencies": {
     "@fiberguard/fiber-mock": "workspace:*",
+    "@fiberguard/gateway": "workspace:*",
+    "@fiberguard/policy": "workspace:*",
     "@types/node": "^26.1.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"

@@ -8,6 +8,18 @@ importers:
 
   .: {}
 
+  packages/fiber-mock:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.9
+        version: 4.1.9(@types/node@26.1.0)(vite@8.1.3(@types/node@26.1.0)(yaml@2.9.0))
+
   packages/gateway:
     dependencies:
       '@fastify/cors':
@@ -29,6 +41,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@fiberguard/fiber-mock':
+        specifier: workspace:*
+        version: link:../fiber-mock
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.0
@@ -51,6 +66,31 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.9
+        version: 4.1.9(@types/node@26.1.0)(vite@8.1.3(@types/node@26.1.0)(yaml@2.9.0))
+
+  packages/sdk:
+    dependencies:
+      '@fiberguard/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@fiberguard/fiber-mock':
+        specifier: workspace:*
+        version: link:../fiber-mock
+      '@fiberguard/gateway':
+        specifier: workspace:*
+        version: link:../gateway
+      '@fiberguard/policy':
+        specifier: workspace:*
+        version: link:../policy
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.0

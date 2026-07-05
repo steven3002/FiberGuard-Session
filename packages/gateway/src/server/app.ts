@@ -6,9 +6,14 @@ import type { GatewayConfig } from "../config.js";
 import { AuditWriter } from "../core/audit/writer.js";
 import { AuditReader } from "../core/audit/reader.js";
 import { SessionStore } from "../core/sessions/store.js";
+import { SpendLedger } from "../core/spend/ledger.js";
+import { OwnershipIndex } from "../core/ownership/index.js";
+import { FiberClient } from "../upstream/fiber.js";
 import { healthRoutes } from "./routes/health.js";
 import { sessionRoutes } from "./routes/session.js";
 import { auditRoutes } from "./routes/audit.js";
+import { intentRoutes } from "./routes/intent.js";
+import { readRoutes } from "./routes/read.js";
 
 export interface AppOptions {
   config: GatewayConfig;
@@ -20,6 +25,9 @@ export interface GatewayRuntime {
   config: GatewayConfig;
   policy: Policy;
   sessionStore: SessionStore;
+  spendLedger: SpendLedger;
+  ownership: OwnershipIndex;
+  fiber: FiberClient;
   audit: AuditWriter;
   auditReader: AuditReader;
 }
@@ -43,6 +51,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     config: options.config,
     policy: options.policy,
     sessionStore: new SessionStore(options.config.dataDir),
+    spendLedger: new SpendLedger(options.config.dataDir),
+    ownership: new OwnershipIndex(options.config.dataDir),
+    fiber: new FiberClient(options.config.upstreamUrl),
     audit: new AuditWriter(auditPath),
     auditReader: new AuditReader(auditPath),
   };
@@ -56,6 +67,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   await app.register(healthRoutes);
   await app.register(sessionRoutes);
+  await app.register(intentRoutes);
+  await app.register(readRoutes);
   await app.register(auditRoutes);
 
   return app;

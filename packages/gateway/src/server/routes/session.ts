@@ -41,6 +41,8 @@ function requestView(record: StoredSessionRequest, policy: Policy) {
     expires_in_ms: record.expires_in_ms,
     permissions: record.granted_permissions,
     denied_actions: app?.deny.map((rule) => rule.action) ?? [],
+    // Present once approved so the SDK's waitForApproval() can learn the session id.
+    ...(record.session_id !== undefined ? { session_id: record.session_id } : {}),
   };
 }
 
