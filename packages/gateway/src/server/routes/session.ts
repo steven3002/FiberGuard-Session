@@ -6,7 +6,6 @@ import {
   revokeSessionBodySchema,
   sessionIdSchema,
   sessionRequestBodySchema,
-  type DecisionReason,
 } from "@fiberguard/shared";
 import { evaluateSessionRequest, type Policy } from "@fiberguard/policy";
 import {
@@ -14,15 +13,7 @@ import {
   SessionStoreError,
   type StoredSessionRequest,
 } from "../../core/sessions/store.js";
-
-function blockedBody(reason: DecisionReason, details?: Record<string, unknown>) {
-  return {
-    status: "blocked" as const,
-    decision: "blocked" as const,
-    reason,
-    ...(details !== undefined ? { details } : {}),
-  };
-}
+import { blockedBody } from "../responses.js";
 
 function sendStoreError(reply: FastifyReply, error: unknown): FastifyReply {
   if (error instanceof SessionStoreError) {
