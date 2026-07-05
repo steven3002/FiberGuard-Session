@@ -1,0 +1,24 @@
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "FiberGuard Agent Demo",
+  description: "Spend-limited Fiber payment session demo",
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <header className="site-header">
+          <span className="brand">
+            FiberGuard <span>Agent Demo</span>
+          </span>
+          <span className="tagline">:3001 · uses @fiberguard/session against the gateway</span>
+        </header>
+        <main className="container">{children}</main>
+      </body>
+    </html>
+  );
+}

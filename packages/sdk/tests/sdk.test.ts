@@ -241,4 +241,37 @@ describe("FiberGuard SDK (mocked fetch)", () => {
     const session = await guard.requestSession({ permissions: [{ action: "payment.pay_invoice" }] });
     expect(await session.revoke()).toEqual({ decision: "allowed", status: "revoked" });
   });
+
+  it("getAudit maps events to camelCase", async () => {
+    const { guard } = harness({
+      "GET /audit": {
+        status: 200,
+        body: {
+          events: [
+            {
+              event: "intent_allowed",
+              app_id: "agent-demo",
+              action: "payment.pay_invoice",
+              requested_amount: "0.5",
+              decision: "allowed",
+              reason: "WITHIN_POLICY",
+              timestamp: "2026-07-05T10:00:00.000Z",
+            },
+          ],
+        },
+      },
+    });
+    const events = await guard.getAudit({ appId: "agent-demo" });
+    expect(events).toEqual([
+      {
+        event: "intent_allowed",
+        appId: "agent-demo",
+        action: "payment.pay_invoice",
+        requestedAmount: "0.5",
+        decision: "allowed",
+        reason: "WITHIN_POLICY",
+        timestamp: "2026-07-05T10:00:00.000Z",
+      },
+    ]);
+  });
 });

@@ -1,6 +1,8 @@
 import type {
   ActionResult,
+  AuditEntry,
   ChannelSummaryResult,
+  DecisionReason,
   FiberGuardAction,
   GrantedPermission,
   InvoiceResult,
@@ -116,4 +118,19 @@ export function mapAction(body: Record<string, unknown>): ActionResult | null {
     };
   }
   return null;
+}
+
+export function mapAuditEntry(wire: Record<string, unknown>): AuditEntry {
+  return {
+    event: String(wire.event),
+    ...(typeof wire.app_id === "string" ? { appId: wire.app_id } : {}),
+    ...(typeof wire.origin === "string" ? { origin: wire.origin } : {}),
+    ...(typeof wire.session_id === "string" ? { sessionId: wire.session_id } : {}),
+    ...(typeof wire.action === "string" ? { action: wire.action } : {}),
+    ...(typeof wire.asset === "string" ? { asset: wire.asset } : {}),
+    ...(typeof wire.requested_amount === "string" ? { requestedAmount: wire.requested_amount } : {}),
+    decision: wire.decision === "allowed" ? "allowed" : "blocked",
+    reason: wire.reason as DecisionReason,
+    timestamp: String(wire.timestamp),
+  };
 }

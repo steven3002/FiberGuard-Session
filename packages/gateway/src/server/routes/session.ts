@@ -11,6 +11,7 @@ import { evaluateSessionRequest, type Policy } from "@fiberguard/policy";
 import {
   effectiveStatus,
   SessionStoreError,
+  type StoredSession,
   type StoredSessionRequest,
 } from "../../core/sessions/store.js";
 import { blockedBody } from "../responses.js";
@@ -43,6 +44,22 @@ function requestView(record: StoredSessionRequest, policy: Policy) {
     denied_actions: app?.deny.map((rule) => rule.action) ?? [],
     // Present once approved so the SDK's waitForApproval() can learn the session id.
     ...(record.session_id !== undefined ? { session_id: record.session_id } : {}),
+  };
+}
+
+/** Shape consumed by the approval UI's active-sessions / revoke panel. */
+function activeSessionView(session: StoredSession, policy: Policy, now: Date) {
+  const app = policy.apps[session.app_id];
+  return {
+    session_id: session.id,
+    app_id: session.app_id,
+    app_name: app?.name ?? session.app_id,
+    origin: session.origin,
+    status: effectiveStatus(session, now),
+    approval_type: session.approval_type,
+    created_at: session.created_at,
+    expires_at: session.expires_at,
+    permissions: session.permissions,
   };
 }
 
@@ -240,6 +257,12 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
   app.get("/session/pending", async (_request, reply) => {
     const records = await sessionStore.listPendingRequests();
     return reply.send({ requests: records.map((record) => requestView(record, policy)) });
+  });
+
+  app.get("/session/active", async (_request, reply) => {
+    const now = new Date();
+    const sessions = await sessionStore.listActiveSessions(now);
+    return reply.send({ sessions: sessions.map((session) => activeSessionView(session, policy, now)) });
   });
 
   app.get("/session/request/:session_request_id", async (request, reply) => {

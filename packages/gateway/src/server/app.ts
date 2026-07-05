@@ -1,6 +1,9 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
+import fastifyStatic from "@fastify/static";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Policy } from "@fiberguard/policy";
 import type { GatewayConfig } from "../config.js";
 import { AuditWriter } from "../core/audit/writer.js";
@@ -19,6 +22,12 @@ export interface AppOptions {
   config: GatewayConfig;
   policy: Policy;
   logger?: boolean;
+  /**
+   * Directory of the built approval UI (Next.js static export `out/`). When set
+   * and present, the gateway serves it — the approval page for `/approve` and
+   * `/approve/:id`, everything else (assets, `/_next/*`) as static files.
+   */
+  approvalUiDir?: string;
 }
 
 export interface GatewayRuntime {
@@ -41,6 +50,24 @@ export function policyOrigins(policy: Policy): string[] {
     }
   }
   return [...origins];
+}
+
+/** The approval UI's build output, resolved relative to this file (cwd-independent). */
+export function defaultApprovalUiDir(): string {
+  return fileURLToPath(new URL("../../../../apps/approval-ui/out", import.meta.url));
+}
+
+/**
+ * Serves the approval UI static export. Assets (`/_next/*`, favicon, the console
+ * page at `/`) come straight from disk; the single approve screen is served for
+ * `/approve` and `/approve/:id` so the browser can read the request id from the
+ * path (the id is not known at export time).
+ */
+async function registerApprovalUi(app: FastifyInstance, uiDir: string): Promise<void> {
+  await app.register(fastifyStatic, { root: uiDir, prefix: "/" });
+  const approveFile = existsSync(join(uiDir, "approve.html")) ? "approve.html" : "approve/index.html";
+  app.get("/approve", (_request, reply) => reply.sendFile(approveFile));
+  app.get("/approve/:sessionRequestId", (_request, reply) => reply.sendFile(approveFile));
 }
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
@@ -70,6 +97,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(intentRoutes);
   await app.register(readRoutes);
   await app.register(auditRoutes);
+
+  if (options.approvalUiDir !== undefined && existsSync(join(options.approvalUiDir, "index.html"))) {
+    await registerApprovalUi(app, options.approvalUiDir);
+  }
 
   return app;
 }

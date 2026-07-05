@@ -300,6 +300,34 @@ describe("session lifecycle", () => {
     expect(current.json()).toMatchObject({ session_id: approved.session_id, status: "active" });
   });
 
+  it("lists active sessions and drops them once revoked", async () => {
+    const first = await approvedAgentSession();
+    const second = await approvedAgentSession();
+
+    const listed = await app.inject({ method: "GET", url: "/session/active" });
+    const { sessions } = listed.json();
+    expect(sessions.map((s: { session_id: string }) => s.session_id).sort()).toEqual(
+      [first.session_id, second.session_id].sort(),
+    );
+    expect(sessions[0]).toMatchObject({
+      app_id: "agent-demo",
+      app_name: "Agent Demo",
+      origin: "http://localhost:3001",
+      status: "active",
+      approval_type: "session",
+    });
+
+    await app.inject({
+      method: "POST",
+      url: "/session/revoke",
+      payload: { session_id: first.session_id },
+    });
+    const afterRevoke = await app.inject({ method: "GET", url: "/session/active" });
+    expect(
+      afterRevoke.json().sessions.map((s: { session_id: string }) => s.session_id),
+    ).toEqual([second.session_id]);
+  });
+
   it("writes audit events for every lifecycle transition", async () => {
     const pending = await requestAgentSession();
     await app.inject({

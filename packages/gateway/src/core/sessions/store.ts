@@ -238,6 +238,14 @@ export class SessionStore {
     return document.sessions[id] ?? null;
   }
 
+  /** Sessions currently usable (not revoked, expired, or one-shot-consumed), newest first. */
+  async listActiveSessions(now: Date): Promise<StoredSession[]> {
+    const document = await this.sessions.read();
+    return Object.values(document.sessions)
+      .filter((session) => effectiveStatus(session, now) === "active")
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+
   revokeSession(
     id: string,
     now: Date,

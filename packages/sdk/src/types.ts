@@ -108,3 +108,22 @@ export interface WaitForApprovalOptions {
   intervalMs?: number;
   timeoutMs?: number;
 }
+
+/** A decision/lifecycle event from the gateway audit log (camelCase). */
+export interface AuditEntry {
+  event: string;
+  appId?: string;
+  origin?: string;
+  sessionId?: string;
+  action?: string;
+  asset?: string;
+  requestedAmount?: string;
+  decision: "allowed" | "blocked";
+  reason: DecisionReason;
+  timestamp: string;
+}
+
+export interface GetAuditOptions {
+  appId?: string;
+  limit?: number;
+}

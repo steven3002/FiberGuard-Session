@@ -1,0 +1,24 @@
+{
+  "name": "@fiberguard/agent-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FiberGuard agent demo (:3001) — spend-limited payments via @fiberguard/session",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "clean": "rm -rf .next out"
+  },
+  "dependencies": {
+    "@fiberguard/session": "workspace:*",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^6.0.3"
+  }
+}

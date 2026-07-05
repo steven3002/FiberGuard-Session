@@ -1,7 +1,13 @@
 import { asBlocked, FiberGuardError, HttpClient } from "./http.js";
-import { fromWirePermission, toWirePermission } from "./mapping.js";
+import { fromWirePermission, mapAuditEntry, toWirePermission } from "./mapping.js";
 import { Session, type SessionContext } from "./session.js";
-import type { FetchLike, FiberGuardConfig, PermissionRequest } from "./types.js";
+import type {
+  AuditEntry,
+  FetchLike,
+  FiberGuardConfig,
+  GetAuditOptions,
+  PermissionRequest,
+} from "./types.js";
 
 /**
  * Entry point for the FiberGuard SDK. Bind it to a gateway URL, app id, and
@@ -96,6 +102,20 @@ export class FiberGuard {
       });
     }
     throw new FiberGuardError("unexpected current-session response");
+  }
+
+  /** Fetches audit events (newest first), optionally filtered to this app. */
+  async getAudit(options: GetAuditOptions = {}): Promise<AuditEntry[]> {
+    const query = new URLSearchParams();
+    if (options.appId !== undefined) query.set("app_id", options.appId);
+    if (options.limit !== undefined) query.set("limit", String(options.limit));
+    const suffix = query.toString();
+    const response = await this.http.get(`/audit${suffix ? `?${suffix}` : ""}`);
+    const events = response.body.events;
+    if (!Array.isArray(events)) {
+      throw new FiberGuardError("unexpected audit response");
+    }
+    return events.map((event) => mapAuditEntry(event as Record<string, unknown>));
   }
 }
 
