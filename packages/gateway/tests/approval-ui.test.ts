@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -68,6 +68,24 @@ describe("approval UI static serving", () => {
     expect((await app.inject({ method: "GET", url: "/healthz" })).statusCode).toBe(200);
     expect((await app.inject({ method: "GET", url: "/session/active" })).statusCode).toBe(200);
     expect((await app.inject({ method: "GET", url: "/audit" })).statusCode).toBe(200);
+  });
+});
+
+describe("approval UI directory is resolved to an absolute path", () => {
+  it("accepts a relative --approval-ui path (@fastify/static requires absolute)", async () => {
+    // The CLI default is absolute, but a hand-typed relative path like
+    // "apps/approval-ui/out" must not crash the gateway at boot.
+    const relativeDir = relative(process.cwd(), fakeExport());
+    expect(relativeDir.startsWith("/")).toBe(false);
+    const app = await buildApp({
+      config: config(mkdtempSync(join(tmpdir(), "fiberguard-ui-rel-"))),
+      policy,
+      approvalUiDir: relativeDir,
+    });
+    const response = await app.inject({ method: "GET", url: "/" });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain("data-page='console'");
+    await app.close();
   });
 });
 

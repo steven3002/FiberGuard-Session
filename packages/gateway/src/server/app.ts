@@ -2,7 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Policy } from "@fiberguard/policy";
 import type { GatewayConfig } from "../config.js";
@@ -98,8 +98,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(readRoutes);
   await app.register(auditRoutes);
 
-  if (options.approvalUiDir !== undefined && existsSync(join(options.approvalUiDir, "index.html"))) {
-    await registerApprovalUi(app, options.approvalUiDir);
+  // @fastify/static requires an absolute root; a relative --approval-ui value
+  // (e.g. "apps/approval-ui/out") would otherwise crash the gateway at boot.
+  if (options.approvalUiDir !== undefined) {
+    const uiDir = resolve(options.approvalUiDir);
+    if (existsSync(join(uiDir, "index.html"))) {
+      await registerApprovalUi(app, uiDir);
+    }
   }
 
   return app;
