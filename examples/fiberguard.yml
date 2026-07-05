@@ -1,0 +1,73 @@
+# FiberGuard Session policy
+#
+# Grants three demo apps scoped access to a Fiber node:
+#   - agent-demo:     spend-limited RUSD payments, approval-gated, short-lived sessions
+#   - merchant-demo:  invoice creation without any payment authority
+#   - dashboard-demo: read-only node and channel access
+#
+# Any action not explicitly allowed for an app is blocked (default deny).
+# Actions listed under `deny` are refused even if a session requests them.
+
+assets:
+  RUSD:
+    decimals: 8
+    # Placeholder script for local demos against the mock Fiber node.
+    # Replace with the real RUSD UDT type script before pointing --upstream
+    # at a live node.
+    udt_type_script:
+      code_hash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+      hash_type: type
+      args: "0x"
+  CKB:
+    decimals: 8
+    native: true
+
+apps:
+  agent-demo:
+    name: "Agent Demo"
+    origins:
+      - "http://localhost:3001"
+    allow:
+      - action: "payment.pay_invoice"
+        assets: ["RUSD"]
+        max_amount_per_payment: "1"
+        daily_limit: "5"
+        require_approval: true
+        expires_in: "10m"
+      - action: "payment.read_own"
+    deny:
+      - action: "channel.open"
+      - action: "channel.close"
+      - action: "peer.connect"
+      - action: "payments.read_all"
+
+  merchant-demo:
+    name: "Merchant Demo"
+    origins:
+      - "http://localhost:3002"
+    allow:
+      - action: "invoice.create"
+        assets: ["RUSD", "CKB"]
+        max_amount_per_invoice: "100"
+        require_approval: false
+      - action: "payment.read_own"
+    deny:
+      # payment.pay_invoice is intentionally NOT listed here: it is simply never
+      # allowed, so attempts are blocked with ACTION_NOT_ALLOWED (default deny).
+      - action: "channel.open"
+      - action: "channel.close"
+
+  dashboard-demo:
+    name: "Read-only Dashboard"
+    origins:
+      - "http://localhost:3003"
+    allow:
+      - action: "node.read"
+      - action: "channels.read_summary"
+      - action: "payment.read_own"
+    deny:
+      - action: "payment.pay_invoice"
+      - action: "invoice.create"
+      - action: "channel.open"
+      - action: "channel.close"
+      - action: "peer.connect"
