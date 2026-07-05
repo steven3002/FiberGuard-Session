@@ -1,0 +1,14 @@
+{
+  "name": "fiberguard-session",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Scoped, revocable, spend-limited payment sessions for Fiber apps",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.17.0"
+}
