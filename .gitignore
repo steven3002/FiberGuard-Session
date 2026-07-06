@@ -6,4 +6,4 @@ coverage/
 .fiberguard/
 .next/
 out/
-examples/demo-script.md
+.fiber-node/

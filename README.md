@@ -104,9 +104,19 @@ node packages/gateway/dist/cli.js start \
   --approval-ui apps/approval-ui/out
 ```
 
-To run against a **real** Fiber node, point `--upstream` at its RPC endpoint and
-use a policy whose RUSD `udt_type_script` is the real UDT script (the bundled
-example uses a mock-only placeholder). See
+### Run against a real Fiber testnet node
+
+```bash
+pnpm demo:testnet
+```
+
+This downloads the `fnn` binary, boots a **real Fiber testnet node**, points the
+gateway at it (`examples/fiberguard.testnet.yml`, real RUSD UDT script), runs the
+story against the live node, and asks whether to leave the stack up. The gateway
+needs **no code changes** for a real node — only the upstream URL and asset config
+differ. Reads, invoice creation, and every policy block are fully real out of the
+box; a *settled* payment additionally needs a funded channel. Full guide:
+[docs/testnet.md](./docs/testnet.md). Honest boundaries:
 [docs/security-limitations.md](./docs/security-limitations.md).
 
 ## Policy example

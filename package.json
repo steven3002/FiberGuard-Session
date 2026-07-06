@@ -8,7 +8,8 @@
     "test": "pnpm -r --if-present test",
     "mock": "node packages/fiber-mock/dist/cli.js start --port 8227",
     "gateway": "node packages/gateway/dist/cli.js start --policy examples/fiberguard.yml --upstream http://127.0.0.1:8227 --port 8787 --approval-ui apps/approval-ui/out",
-    "demo": "bash scripts/demo.sh"
+    "demo": "bash scripts/demo.sh",
+    "demo:testnet": "bash scripts/testnet.sh"
   },
   "engines": {
     "node": ">=20"
