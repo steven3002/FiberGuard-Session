@@ -97,10 +97,27 @@ node packages/gateway/dist/cli.js start \
   --approval-ui apps/approval-ui/out
 ```
 
-## Verified
+## Verified — including a fully settled payment
 
-On this project's setup, a real `fnn` v0.9.0-rc7 testnet node booted, connected to 2
-testnet peers, and the FiberGuard gateway drove it unmodified: live `node.read`, a
-real `fibt1…` invoice from `invoice.create`, all policy blocks, and a policy-allowed
-payment reaching the node and returning a real node-level result. See
+On this project's setup, a real `fnn` v0.9.0-rc7 testnet node booted, connected to
+real testnet peers, and the FiberGuard gateway drove it unmodified: live `node.read`,
+a real `fibt1…` invoice from `invoice.create`, and all policy blocks.
+
+**A complete, policy-approved payment settled on-chain-backed Fiber testnet through
+FiberGuard (2026-07-06):**
+
+1. Two local testnet nodes, A (agent) and B (payee), each funded from the CKB faucet
+   (100k CKB each; B needs ~100 CKB for its channel-reserve output).
+2. Opened a 500 CKB channel A→B (B auto-accepts once funded); it reached
+   `ChannelReady` after its funding tx confirmed.
+3. B issued a 1 CKB invoice (`payment_hash 0x68814f85…`).
+4. Through the gateway on the settlement policy: agent requested a CKB payment
+   session → operator approved → `POST /intent/pay-invoice` → **`send_payment`
+   settled**: payment `Success`, invoice `Paid`, channel balance moved A 401→400 /
+   B 0→1 CKB. The agent then read its own settled payment via `payment.read_own`,
+   and the whole thing is in the audit log (`session_requested` → `session_approved`
+   → `intent_allowed pay_invoice` → `intent_allowed read_own`).
+
+That is the full thesis proven live: a scoped, approved, spend-limited intent turned
+into a real Fiber settlement, with the gateway unchanged from the mock build. See
 [security-limitations.md](./security-limitations.md) for the honest boundaries.

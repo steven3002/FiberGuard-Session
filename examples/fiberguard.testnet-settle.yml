@@ -1,0 +1,65 @@
+# FiberGuard Session policy — TESTNET SETTLEMENT
+#
+# Same as fiberguard.testnet.yml, but the agent is additionally allowed to pay
+# CKB invoices. Used for the live end-to-end settlement demo, where funding comes
+# from the CKB faucet (native CKB) rather than RUSD — so a real, policy-approved
+# payment can settle over a CKB channel without needing testnet RUSD.
+
+assets:
+  RUSD:
+    decimals: 8
+    udt_type_script:
+      code_hash: "0x1142755a044bf2ee358cba9f2da187ce928c91cd4dc8692ded0337efa677d21a"
+      hash_type: type
+      args: "0x878fcc6f1f08d48e87bb1c3b3d5083f23f8a39c5d5c764f253b55b998526439b"
+  CKB:
+    decimals: 8
+    native: true
+
+apps:
+  agent-demo:
+    name: "Agent Demo"
+    origins:
+      - "http://localhost:3001"
+    allow:
+      - action: "payment.pay_invoice"
+        assets: ["RUSD", "CKB"]
+        max_amount_per_payment: "100"
+        daily_limit: "500"
+        require_approval: true
+        expires_in: "30m"
+      - action: "payment.read_own"
+    deny:
+      - action: "channel.open"
+      - action: "channel.close"
+      - action: "peer.connect"
+      - action: "payments.read_all"
+
+  merchant-demo:
+    name: "Merchant Demo"
+    origins:
+      - "http://localhost:3002"
+    allow:
+      - action: "invoice.create"
+        assets: ["RUSD", "CKB"]
+        max_amount_per_invoice: "100"
+        require_approval: false
+      - action: "payment.read_own"
+    deny:
+      - action: "channel.open"
+      - action: "channel.close"
+
+  dashboard-demo:
+    name: "Read-only Dashboard"
+    origins:
+      - "http://localhost:3003"
+    allow:
+      - action: "node.read"
+      - action: "channels.read_summary"
+      - action: "payment.read_own"
+    deny:
+      - action: "payment.pay_invoice"
+      - action: "invoice.create"
+      - action: "channel.open"
+      - action: "channel.close"
+      - action: "peer.connect"
