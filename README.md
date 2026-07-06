@@ -11,6 +11,57 @@ intents.
 
 ---
 
+## Quick start here
+
+Two commands. The first runs the entire product locally in seconds; the second
+proves it against **live infrastructure** with a real settled payment. The gateway
+code is **identical** in both — only the upstream URL and asset config differ.
+
+### 1 · See the whole product — instant, zero external dependencies
+
+```bash
+pnpm install && pnpm demo
+```
+
+Boots the bundled mock Fiber node, the gateway + approval UI, and all three demo
+apps, then plays the full story: an AI agent pays within its limit, is **blocked**
+over-limit and on forbidden actions; a merchant creates invoices but **can't pay**;
+a dashboard reads but **can't close channels**; the session is revoked; and the
+audit log shows every allowed/blocked decision. Then open:
+
+| | |
+| --- | --- |
+| Operator console / approval UI | http://localhost:8787/ |
+| Agent · Merchant · Dashboard | http://localhost:3001 · :3002 · :3003 |
+
+Walk it with [`examples/demo-script.md`](./examples/demo-script.md).
+
+### 2 · Prove it on the real CKB testnet — a settled off-chain payment
+
+```bash
+pnpm demo:testnet:settle
+```
+
+Downloads a real `fnn` node, stands up two live testnet nodes, opens a **500 CKB
+payment channel anchored on CKB L1**, and settles a **policy-approved `pay_invoice`
+off-chain in ~4 seconds** through FiberGuard — then fires the unauthorized RPC
+actions (blocked) and prints the audit log **side by side**. On a fresh clone it
+pauses once to tell you exactly which faucet address to fund; after that it's
+instant and repeatable (it reuses the open channel — no L1 wait). Full guide:
+[docs/testnet.md](./docs/testnet.md).
+
+### What each command proves
+
+| Command | Proves | Needs |
+| --- | --- | --- |
+| `pnpm demo` | the complete permission model — scoped sessions, spend limits, approval, revocation, audit — end to end | nothing (mock upstream) |
+| `pnpm demo:testnet:settle` | the same gateway, unchanged, gating a **real Fiber Network settlement** on live CKB testnet | one faucet claim per node, once |
+
+Prefer the terminal? [`examples/curl-examples.md`](./examples/curl-examples.md) runs
+the same story over `curl` with real captured responses.
+
+---
+
 ## Problem
 
 Fiber applications talk to a Fiber Network node over JSON-RPC. That interface is
@@ -114,10 +165,20 @@ This downloads the `fnn` binary, boots a **real Fiber testnet node**, points the
 gateway at it (`examples/fiberguard.testnet.yml`, real RUSD UDT script), runs the
 story against the live node, and asks whether to leave the stack up. The gateway
 needs **no code changes** for a real node — only the upstream URL and asset config
-differ. Reads, invoice creation, and every policy block are fully real out of the
-box; a *settled* payment additionally needs a funded channel. Full guide:
-[docs/testnet.md](./docs/testnet.md). Honest boundaries:
-[docs/security-limitations.md](./docs/security-limitations.md).
+differ. Reads, invoice creation, and every policy block are fully real out of the box.
+
+For a **fully settled payment on the live CKB testnet**:
+
+```bash
+pnpm demo:testnet:settle
+```
+
+This scripts the whole off-chain settlement: two local testnet nodes, a real
+500-CKB payment channel anchored on CKB L1, and a policy-approved `pay_invoice`
+that settles off-chain in seconds through FiberGuard — then it fires the blocked
+actions and dumps the audit log side by side. Idempotent (reuses the channel on
+re-runs, no L1 wait). Full guide: [docs/testnet.md](./docs/testnet.md). Honest
+boundaries: [docs/security-limitations.md](./docs/security-limitations.md).
 
 ## Policy example
 

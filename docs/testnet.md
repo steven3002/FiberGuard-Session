@@ -43,11 +43,42 @@ that node the following are fully real:
 That already demonstrates the entire security thesis: apps use real Fiber
 capabilities, and everything unsafe is stopped — most of it before the node.
 
-## Making a *successful* payment (optional, needs funding)
+## A fully settled payment — one command
+
+```bash
+pnpm demo:testnet:settle
+```
+
+`scripts/testnet-settle.sh` scripts the entire off-chain settlement against the
+live CKB testnet:
+
+- Stands up **two** local testnet nodes — A (the agent's node, behind FiberGuard)
+  and B (the payee) — deriving each node's CKB address from its key (verified
+  against BIP-350 + `ckbhash("")` vectors via `scripts/lib/ckb-address.py`).
+- **Pauses at the funding gate** on a fresh clone: prints each node's `ckt1…`
+  address and the faucet URL, then polls CKB L1 and continues automatically once
+  the deposits confirm. (You fund them once; the addresses persist across runs.)
+- Opens a **500 CKB payment channel A→B**, narrating the one-time L1 anchor wait
+  (`[CKB L1] Waiting for channel funding transaction to anchor…`). On re-runs it
+  **reuses the open channel instantly — no L1 wait**.
+- B issues a CKB invoice; the agent requests a session, the operator approves, and
+  the payment goes **through FiberGuard** → `send_payment` → **settles off-chain in
+  seconds**. Balances move on the channel (e.g. A 400→399 / B 1→2 CKB).
+- Then fires the **blocked** cases (`channel.open` → `ACTION_EXPLICITLY_DENIED`,
+  over-limit pay → `AMOUNT_EXCEEDS_SESSION_LIMIT`) and dumps the FiberGuard
+  `/audit` log **side by side** — allowed settlement next to blocked RPC actions.
+- Leaves the whole stack running (nodes + gateway) for further poking.
+
+Env knobs: `FNN_VERSION`, `GW_PORT`, `FIBER_SECRET_KEY_PASSWORD`. Idempotent and
+safe to re-run. The manual steps below are what the script automates.
+
+## Making a *successful* payment manually (what the script does)
 
 A settled `payment.pay_invoice` needs the node to have a funded channel with
 outbound liquidity. This is inherently not instant (faucet + on-chain
-confirmations), so it's a manual, one-time setup:
+confirmations), so it's a one-time setup. Key gotchas the script handles: the
+**payee also needs ~100 CKB** for its channel-reserve output (it can't accept with
+0), and it auto-accepts once funded.
 
 1. **Get the node's CKB address:**
    ```bash
