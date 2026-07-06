@@ -31,7 +31,8 @@ A_RPC=8227; A_P2P=8228; B_RPC=8237; B_P2P=8238; GW_PORT="${GW_PORT:-8787}"
 FUND_SHANNONS=50000000000      # 500 CKB channel from A
 PAY_CKB=1                       # settle 1 CKB, agent -> payee
 PAY_SHANNONS=100000000
-A_MIN_CKB=550; B_MIN_CKB=120    # min balances to proceed (channel + reserves + fees)
+B_FUND_CKB=200                  # CKB moved A->B (single-claim) for B's channel reserve
+A_MIN_CKB=750; B_MIN_CKB=120    # min balances to proceed (channel + B's reserve + fees)
 GW="http://127.0.0.1:$GW_PORT"
 
 c_b=$'\033[1m'; c_d=$'\033[2m'; c_g=$'\033[32m'; c_r=$'\033[31m'; c_y=$'\033[33m'; c_0=$'\033[0m'
@@ -99,6 +100,7 @@ open(sys.argv[2],"w").write(s)' "$BIN_DIR/config/testnet/config.yml" "$base/conf
     local privder; privder=$(openssl ec -in "$pem" -outform DER 2>/dev/null | xxd -p -c 400)
     local priv; priv=$(python3 -c 'import sys;d=sys.argv[1];i=d.find("0201010420");print(d[i+10:i+10+64])' "$privder")
     printf '%s' "$priv" > "$base/ckb/key"; rm -f "$pem"
+    printf '%s' "$priv" > "$NODE_HOME/$name.priv"   # transient: single-claim L1 funding; deleted after use
     python3 "$LIB/ckb-address.py" "$pub" ckt > "$addrfile"
     python3 -c 'import sys,hashlib;print("0x"+hashlib.blake2b(bytes.fromhex(sys.argv[1]),digest_size=32,person=b"ckb-default-hash").hexdigest()[:40])' "$pub" > "$argsfile"
     ok "node $name: generated key + derived address"
@@ -144,9 +146,33 @@ wait_funded(){
   done
   say; say "${c_r}timed out waiting for node $name funding${c_0}"; exit 1
 }
+# Single-claim flex: the judge funds ONLY node A. If node B still needs its
+# channel-reserve CKB, we move it A→B with a hand-rolled, self-signed CKB L1 tx
+# (scripts/lib/ckb-transfer.py) instead of asking for a second faucet claim.
+ensure_payee_funded(){
+  local bal; bal=$(chain_ckb "$B_ARGS")
+  if [ "$bal" -ge "$B_MIN_CKB" ] 2>/dev/null; then ok "node B funded: ${bal} CKB (on-chain)"; return; fi
+  if [ -f "$NODE_HOME/A.priv" ]; then
+    l1 "Single-claim mode: funding payee B from A over CKB L1 — no second faucet."
+    say "  ${c_d}(hand-rolled, self-signed secp256k1 tx via scripts/lib/ckb-transfer.py — moving ${B_FUND_CKB} CKB)${c_0}"
+    local txid; txid=$(python3 "$LIB/ckb-transfer.py" "$(cat "$NODE_HOME/A.priv")" "$B_ARGS" "$((B_FUND_CKB*100000000))" "$CKB_RPC" 2>&1)
+    if [[ "$txid" == 0x* ]]; then
+      ok "L1 transfer broadcast: $txid"
+      l1 "waiting for it to anchor so node B can see its reserve…"
+      for i in $(seq 1 40); do
+        bal=$(chain_ckb "$B_ARGS")
+        [ "$bal" -ge "$B_MIN_CKB" ] 2>/dev/null && { ok "payee B funded via L1 transfer: ${bal} CKB"; rm -f "$NODE_HOME/A.priv" "$NODE_HOME/B.priv"; return; }
+        printf "\r  ${c_d}[CKB L1] anchoring transfer… %ss${c_0}   " "$((i*8))"; sleep 8
+      done
+      say; say "${c_r}transfer broadcast but B balance didn't update in time — check $txid${c_0}"; exit 1
+    fi
+    say "${c_r}L1 auto-funding failed:${c_0} $txid"; say "falling back to a faucet claim for node B."
+  fi
+  wait_funded B "$B_ADDR" "$B_ARGS" "$B_MIN_CKB"
+}
 guard "Checking on-chain balances (real CKB testnet)…"
 wait_funded A "$A_ADDR" "$A_ARGS" "$A_MIN_CKB"
-wait_funded B "$B_ADDR" "$B_ARGS" "$B_MIN_CKB"
+ensure_payee_funded
 hr
 
 # 4. peer link ---------------------------------------------------------

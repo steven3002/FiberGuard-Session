@@ -1,5 +1,9 @@
 # Running Against a Real Fiber Testnet Node
 
+> **Just want the proof?** [docs/testnet-proof.md](./testnet-proof.md) has the
+> on-chain transaction hashes (explorer links), the FiberGuard audit log, and the
+> terminal transcript from our live settlement run — no terminal required.
+
 The default demo runs against the bundled mock (`pnpm demo`). This page covers
 running FiberGuard against a **real Fiber testnet node** — which the gateway
 supports with **no code changes**; only the upstream URL and the RUSD asset config
@@ -55,9 +59,12 @@ live CKB testnet:
 - Stands up **two** local testnet nodes — A (the agent's node, behind FiberGuard)
   and B (the payee) — deriving each node's CKB address from its key (verified
   against BIP-350 + `ckbhash("")` vectors via `scripts/lib/ckb-address.py`).
-- **Pauses at the funding gate** on a fresh clone: prints each node's `ckt1…`
-  address and the faucet URL, then polls CKB L1 and continues automatically once
-  the deposits confirm. (You fund them once; the addresses persist across runs.)
+- **Single faucet claim.** On a fresh clone it pauses and prints **only node A's**
+  `ckt1…` address + the faucet URL, polls CKB L1 until A is funded, then **funds the
+  payee node B over L1 itself** — a hand-rolled, self-signed CKB transaction built by
+  `scripts/lib/ckb-transfer.py` (pure-Python secp256k1 recoverable ECDSA + molecule
+  serialization + `secp256k1_blake160_sighash_all`; no `ckb-cli`, no signing lib). So
+  the judge claims the faucet **once**, not twice. (Addresses persist across runs.)
 - Opens a **500 CKB payment channel A→B**, narrating the one-time L1 anchor wait
   (`[CKB L1] Waiting for channel funding transaction to anchor…`). On re-runs it
   **reuses the open channel instantly — no L1 wait**.
@@ -150,5 +157,15 @@ FiberGuard (2026-07-06):**
    → `intent_allowed pay_invoice` → `intent_allowed read_own`).
 
 That is the full thesis proven live: a scoped, approved, spend-limited intent turned
-into a real Fiber settlement, with the gateway unchanged from the mock build. See
-[security-limitations.md](./security-limitations.md) for the honest boundaries.
+into a real Fiber settlement, with the gateway unchanged from the mock build.
+
+The **single-claim path** was also verified on-chain: a hand-rolled, self-signed CKB
+L1 transfer (`scripts/lib/ckb-transfer.py`) moved CKB from node A to node B and
+committed on testnet — tx
+[`0x9f0d1037…331ddd3`](https://pudge.explorer.nervos.org/transaction/0x9f0d10377e422e7d63ac0671dcff3ce3a86d7533351249c3dd5d0541a331ddd3),
+node B's balance rising by exactly the transferred amount. The script even asserts
+its locally-computed molecule tx-hash equals the node's — it matched.
+
+Full receipts (all hashes + explorer links + audit log):
+[testnet-proof.md](./testnet-proof.md). Honest boundaries:
+[security-limitations.md](./security-limitations.md).

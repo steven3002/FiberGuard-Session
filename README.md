@@ -46,9 +46,15 @@ Downloads a real `fnn` node, stands up two live testnet nodes, opens a **500 CKB
 payment channel anchored on CKB L1**, and settles a **policy-approved `pay_invoice`
 off-chain in ~4 seconds** through FiberGuard — then fires the unauthorized RPC
 actions (blocked) and prints the audit log **side by side**. On a fresh clone it
-pauses once to tell you exactly which faucet address to fund; after that it's
-instant and repeatable (it reuses the open channel — no L1 wait). Full guide:
-[docs/testnet.md](./docs/testnet.md).
+pauses once for **a single faucet claim to node A** — it then funds the payee node
+over L1 itself with a hand-rolled, self-signed CKB transaction (no second faucet).
+After that it's instant and repeatable (reuses the open channel — no L1 wait). Full
+guide: [docs/testnet.md](./docs/testnet.md).
+
+> **Short on time?** View the [cryptographic receipts and audit logs from our live
+> testnet settlement run](./docs/testnet-proof.md) — real on-chain transaction
+> hashes (explorer links), the FiberGuard audit trail, and the terminal transcript.
+> No terminal required.
 
 ### What each command proves
 
